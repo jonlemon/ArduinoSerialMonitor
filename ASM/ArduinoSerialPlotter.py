@@ -19,6 +19,11 @@ from boto.dynamodb.condition import NULL
 ## Class Main
 ###########################################################################
 
+class Graph ( wx.Panel):
+    
+    def __init__( self, *args, **kwargs ):
+        wx.Panel.__init__ ( self, *args, **kwargs )
+
   
 class Main ( wx.Frame ):
     
@@ -44,7 +49,7 @@ class Main ( wx.Frame ):
         
         bSizer8 = wx.BoxSizer( wx.VERTICAL )
         
-        self.graph = wx.Panel( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL )
+        self.graph = Graph( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL )
         self.graph.SetBackgroundColour( wx.Colour( 255, 255, 255 ) )
         self.graph.SetMinSize( wx.Size( -1,512 ) )
         
@@ -155,6 +160,7 @@ class Main ( wx.Frame ):
         
     # Virtual event handlers, overide them in your derived class
     def onStart( self, event ):
+        print(self.graph.test())
         print(self.connections.GetStringSelection())
         print(self.running)
         if (self.ser == NULL):
