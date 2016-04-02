@@ -22,8 +22,57 @@ from boto.dynamodb.condition import NULL
 class Graph ( wx.Panel):
     
     def __init__( self, *args, **kwargs ):
+        self.data = list()
+    
         wx.Panel.__init__ ( self, *args, **kwargs )
+        
+        self.Bind( wx.EVT_SIZE, self.updateGraph )
+        self.Bind(wx.EVT_PAINT, self.onPaint)
+        
+        
+    def onPaint(self, event=None):
+        self.dc = wx.PaintDC(self)
+        self.dc.Clear()
+        self.draw(self.dc)    
 
+    def draw(self, dc):
+        font = wx.Font(pointSize = 10, family = wx.DEFAULT,
+               style = wx.NORMAL, weight = wx.NORMAL,
+               faceName = 'Consolas')
+        dc.SetFont(font)
+        XMarkings=25
+        YMarkings=25
+        HEIGHT=self.getGraphHeight() - XMarkings
+        WIDTH=self.getGraphWidth()
+        HR=float(HEIGHT)/1024
+        INTERVAL=100
+        data = self.data
+        lastValue=0
+        dc.SetPen(wx.Pen(wx.BLUE, 1)) 
+        i=0
+        while (i < (1024/INTERVAL) + 1):
+            dc.DrawText(str(i * INTERVAL), 0, HEIGHT - i * INTERVAL * HR - 7)
+            dc.DrawLine(YMarkings + 0, HEIGHT - i * INTERVAL * HR, WIDTH, HEIGHT - i * INTERVAL * HR)
+            i+=1;
+        j=0
+        dc.SetPen(wx.Pen(wx.BLACK, 2))           
+        for value in data[1:data.__sizeof__()]:
+            print("test")
+            dc.DrawLine(YMarkings + j, HEIGHT - int(lastValue) * HR, YMarkings + j+1, HEIGHT - (int(value) * HR))
+            lastValue=value
+            j+=1;
+            
+    def setData(self, data):
+        self.data = data
+        
+    def updateGraph(self, *args):
+        self.Refresh()
+
+    def getGraphHeight(self):
+        return self.GetSize()[1]
+    
+    def getGraphWidth(self):
+        return self.GetSize()[0]
   
 class Main ( wx.Frame ):
     
@@ -72,6 +121,9 @@ class Main ( wx.Frame ):
         self.stop_button = wx.Button( self, wx.ID_ANY, u"Stop", wx.DefaultPosition, wx.DefaultSize, 0 )
         bSizer6.Add( self.stop_button, 1, wx.ALIGN_CENTER|wx.ALL, 5 )
         
+        self.clear_button = wx.Button( self, wx.ID_ANY, u"Clear", wx.DefaultPosition, wx.DefaultSize, 0 )
+        bSizer6.Add( self.clear_button, 1, wx.ALIGN_CENTER|wx.ALL, 5 )
+        
         self.connect = wx.Button( self, wx.ID_ANY, u"Connect", wx.DefaultPosition, wx.DefaultSize, 0 )
         bSizer6.Add( self.connect, 1, wx.ALL, 5 )
         
@@ -99,6 +151,7 @@ class Main ( wx.Frame ):
         self.textInput.Bind( wx.EVT_SET_FOCUS, self.hideCarat )
         self.start_button.Bind( wx.EVT_BUTTON, self.onStart )
         self.stop_button.Bind( wx.EVT_BUTTON, self.onStop )
+        self.clear_button.Bind( wx.EVT_BUTTON, self.onClear )
         self.save_button.Bind( wx.EVT_BUTTON, self.getStats )
         self.connect.Bind( wx.EVT_BUTTON, self.initializeSerialConnection )
         self.connections.Bind( wx.EVT_CHOICE, self.initializeSerialConnection )
@@ -145,7 +198,6 @@ class Main ( wx.Frame ):
         for value in data[1:data.__sizeof__()]:
             print("test")
             dc.DrawLine(YMarkings + j, HEIGHT - int(lastValue) * HR, YMarkings + j+1, HEIGHT - (int(value) * HR))
-#            pygame.draw.line(windowSurface, BLACK, (j, HEIGHT - lastValue * HR), (j+1, HEIGHT - value * HR))
             lastValue=value
             j+=1;
             
@@ -160,7 +212,6 @@ class Main ( wx.Frame ):
         
     # Virtual event handlers, overide them in your derived class
     def onStart( self, event ):
-        print(self.graph.test())
         print(self.connections.GetStringSelection())
         print(self.running)
         if (self.ser == NULL):
@@ -175,13 +226,16 @@ class Main ( wx.Frame ):
     def onStop(self, event):
         self.running = False
         
+    def onClear(self, event):
+        self.data = list()
+        
     def LongRunning(self):
         while self.running:
             text = self.collectSerial()
             wx.CallAfter(self.textInput.AppendText, (text + "\n"))
 #            wx.CallAfter(self.writeSerial(text))
             time.sleep(.001)
-            self.graph.Refresh()
+            self.graph.updateGraph()
         
     def listConnections(self, value):
         port = self.connections.GetStringSelection()
@@ -205,6 +259,7 @@ class Main ( wx.Frame ):
     def collectSerial(self):
         input = self.ser.readline().rstrip()
         self.data.append(input)
+        self.graph.setData(self.data)
         return input
 
     def writeSerial(self, text):
