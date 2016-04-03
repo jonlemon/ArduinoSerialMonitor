@@ -58,7 +58,10 @@ class Graph ( wx.Panel):
             i+=1;
         
         # Draw Data Line
-        lastValue=data[0]
+        if (len(data) < 2):
+            lastValue = 0
+        else:
+            lastValue=data[1]
         j=0
         dc.SetPen(wx.Pen(wx.BLACK, 2))           
         for value in data[1:data.__sizeof__()]:
@@ -155,10 +158,12 @@ class Main ( wx.Frame ):
         self.textInput.Bind( wx.EVT_SET_FOCUS, self.hideCarat )
         self.start_button.Bind( wx.EVT_BUTTON, self.onStart )
         self.stop_button.Bind( wx.EVT_BUTTON, self.onStop )
+        self.save_button.Bind( wx.EVT_BUTTON, self.saveFile )
         self.clear_button.Bind( wx.EVT_BUTTON, self.onClear )
-        self.save_button.Bind( wx.EVT_BUTTON, self.getStats )
+#        self.save_button.Bind( wx.EVT_BUTTON, self.getStats )
         self.connect.Bind( wx.EVT_BUTTON, self.initializeSerialConnection )
         self.connections.Bind( wx.EVT_CHOICE, self.initializeSerialConnection )
+        self.Bind(wx.EVT_CLOSE, self.onClose)
     
     def __del__( self ):
         pass
@@ -171,31 +176,42 @@ class Main ( wx.Frame ):
         
     # Virtual event handlers, overide them in your derived class
     def onStart( self, event ):
-        print(self.connections.GetStringSelection())
-        print(self.running)
+#        print(self.connections.GetStringSelection())
+#        print(self.running)
         if (self.ser == NULL):
             self.status.SetStatusText("There are no connected devices")
             return
         if (self.running == False):
+            print("Starting Monitoring")
             self.status.SetStatusText("")
             self.running = True
-            thread = threading.Thread(target=self.LongRunning)
-            thread.start()
+            self.thread = threading.Thread(target=self.LongRunning)
+            self.thread.start()
         
     def onStop(self, event):
+        print("Stopping Monitoring")
         self.running = False
         
     def onClear(self, event):
         self.data = list()
+        self.graph.setData(self.data)
         self.graph.Refresh()
         self.textInput.Clear()
         
     def LongRunning(self):
+        
         while self.running:
             text = self.collectSerial()
-            wx.CallAfter(self.textInput.AppendText, (text + "\n"))
+#            wx.CallAfter(self.textInput.AppendText, (text + "\n"))
+            wx.CallAfter(self.writeSerial, (text))
             time.sleep(.001)
             self.graph.updateGraph()
+        while self.running == False:
+            text = self.collectSerial()
+            time.sleep(.001)
+#        else:
+#            text = self.collectSerial()
+#            time.sleep(.001)
         
     def listConnections(self, value):
         port = self.connections.GetStringSelection()
@@ -210,7 +226,7 @@ class Main ( wx.Frame ):
             self.status.SetStatusText("Already Connected to Port: " + self.ser.portstr)
             return
         self.ser = serial.Serial(conn)
-        print(self.ser)
+#        print(self.ser)
         print("connected to: " + self.ser.portstr)
         self.ser.flushInput()
         self.ser.flushOutput()
@@ -218,18 +234,51 @@ class Main ( wx.Frame ):
 
     def collectSerial(self):
         input = self.ser.readline().rstrip()
-        self.data.append(input)
-        self.graph.setData(self.data)
         return input
 
     def writeSerial(self, text):
-        self.textInput.AppendText(str(text) + "\n")
+        if (text.isdigit()):
+            self.data.append(text)
+            self.graph.setData(self.data)
+            self.textInput.AppendText(str(text) + "\n")
         
         
     def hideCarat(self, event):
         self.textInput.ShowNativeCaret(False)
         event.Skip()
+        
+    def saveFile(self, event):
+        saveFileDialog = wx.FileDialog(
+            self, message="Choose a file",
+            defaultFile="",
+            wildcard="",
+            style=wx.SAVE | wx.FD_OVERWRITE_PROMPT
+            )
+        if saveFileDialog.ShowModal() == wx.ID_OK:
+            self.textInput.SaveFile(saveFileDialog.GetPath())
+        event.Skip()
     
+    def onOpenFile(self, event):
+        """
+        Create and show the Open FileDialog
+        """
+        dlg = wx.FileDialog(
+            self, message="Choose a file",
+            defaultFile="",
+            wildcard="",
+            style=wx.SAVE | wx.FD_OVERWRITE_PROMPT
+            )
+        if dlg.ShowModal() == wx.ID_OK:
+            paths = dlg.GetPaths()
+            print "You chose the following file(s):"
+            for path in paths:
+                print path
+        dlg.Destroy()
+    
+    def onClose(self, event):
+        self.running = False
+        self.graph.Destroy()
+        self.Destroy()
 
 app = wx.App(False)
 
