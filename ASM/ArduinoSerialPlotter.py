@@ -23,14 +23,16 @@ class Graph ( wx.Panel):
     
     def __init__( self, *args, **kwargs ):
         self.data = list()
+        self.XMarkings=25
+        self.YMarkings=25
     
         wx.Panel.__init__ ( self, *args, **kwargs )
+        self.SetDoubleBuffered(True)
         
         self.Bind( wx.EVT_SIZE, self.updateGraph )
         self.Bind(wx.EVT_PAINT, self.onPaint)
         
-        
-    def onPaint(self, event=None):
+    def onPaint(self, event=None):        
         self.dc = wx.PaintDC(self)
         self.dc.Clear()
         self.draw(self.dc)    
@@ -40,25 +42,27 @@ class Graph ( wx.Panel):
                style = wx.NORMAL, weight = wx.NORMAL,
                faceName = 'Consolas')
         dc.SetFont(font)
-        XMarkings=25
-        YMarkings=25
-        HEIGHT=self.getGraphHeight() - XMarkings
+        
+        HEIGHT=self.getGraphHeight() - self.XMarkings
         WIDTH=self.getGraphWidth()
         HR=float(HEIGHT)/1024
         INTERVAL=100
         data = self.data
-        lastValue=0
+        
+        # Draw Grid Lines
         dc.SetPen(wx.Pen(wx.BLUE, 1)) 
         i=0
         while (i < (1024/INTERVAL) + 1):
             dc.DrawText(str(i * INTERVAL), 0, HEIGHT - i * INTERVAL * HR - 7)
-            dc.DrawLine(YMarkings + 0, HEIGHT - i * INTERVAL * HR, WIDTH, HEIGHT - i * INTERVAL * HR)
+            dc.DrawLine(self.YMarkings + 0, HEIGHT - i * INTERVAL * HR, WIDTH, HEIGHT - i * INTERVAL * HR)
             i+=1;
+        
+        # Draw Data Line
+        lastValue=data[0]
         j=0
         dc.SetPen(wx.Pen(wx.BLACK, 2))           
         for value in data[1:data.__sizeof__()]:
-            print("test")
-            dc.DrawLine(YMarkings + j, HEIGHT - int(lastValue) * HR, YMarkings + j+1, HEIGHT - (int(value) * HR))
+            dc.DrawLine(self.YMarkings + j, HEIGHT - int(lastValue) * HR, self.YMarkings + j+1, HEIGHT - (int(value) * HR))
             lastValue=value
             j+=1;
             
@@ -155,8 +159,6 @@ class Main ( wx.Frame ):
         self.save_button.Bind( wx.EVT_BUTTON, self.getStats )
         self.connect.Bind( wx.EVT_BUTTON, self.initializeSerialConnection )
         self.connections.Bind( wx.EVT_CHOICE, self.initializeSerialConnection )
-        self.graph.Bind(wx.EVT_PAINT, self.onPaint)
-        self.graph.Bind( wx.EVT_SIZE, self.updateGraph )
     
     def __del__( self ):
         pass
@@ -166,49 +168,6 @@ class Main ( wx.Frame ):
         self.graph.Refresh()
         for d in self.data:
             print d
-
-    def onPaint(self, event=None):
-        self.dc = wx.PaintDC(self.graph)
-        self.dc.Clear()
-        self.drawGraph(self.dc)
-#        dc.SetPen(wx.Pen(wx.BLACK, 2))
-#        self.dc.DrawLine(0, 0, self.getGraphHeight(), 50)
-    
-    def drawGraph(self, dc):
-        font = wx.Font(pointSize = 10, family = wx.DEFAULT,
-               style = wx.NORMAL, weight = wx.NORMAL,
-               faceName = 'Consolas')
-        dc.SetFont(font)
-        XMarkings=25
-        YMarkings=25
-        HEIGHT=self.getGraphHeight() - XMarkings
-        WIDTH=self.getGraphWidth()
-        HR=float(HEIGHT)/1024
-        INTERVAL=100
-        data = self.data
-        lastValue=0
-        dc.SetPen(wx.Pen(wx.BLUE, 1)) 
-        i=0
-        while (i < (1024/INTERVAL) + 1):
-            dc.DrawText(str(i * INTERVAL), 0, HEIGHT - i * INTERVAL * HR - 7)
-            dc.DrawLine(YMarkings + 0, HEIGHT - i * INTERVAL * HR, WIDTH, HEIGHT - i * INTERVAL * HR)
-            i+=1;
-        j=0
-        dc.SetPen(wx.Pen(wx.BLACK, 2))           
-        for value in data[1:data.__sizeof__()]:
-            print("test")
-            dc.DrawLine(YMarkings + j, HEIGHT - int(lastValue) * HR, YMarkings + j+1, HEIGHT - (int(value) * HR))
-            lastValue=value
-            j+=1;
-            
-    def updateGraph(self, event):
-        self.graph.Refresh()
-        
-    def getGraphHeight(self):
-        return self.graph.GetSize()[1]
-    
-    def getGraphWidth(self):
-        return self.graph.GetSize()[0]
         
     # Virtual event handlers, overide them in your derived class
     def onStart( self, event ):
@@ -228,12 +187,13 @@ class Main ( wx.Frame ):
         
     def onClear(self, event):
         self.data = list()
+        self.graph.Refresh()
+        self.textInput.Clear()
         
     def LongRunning(self):
         while self.running:
             text = self.collectSerial()
             wx.CallAfter(self.textInput.AppendText, (text + "\n"))
-#            wx.CallAfter(self.writeSerial(text))
             time.sleep(.001)
             self.graph.updateGraph()
         
