@@ -25,7 +25,9 @@ class Graph ( wx.Panel):
         self.data = list()
         self.XMarkings=25
         self.YMarkings=25
-    
+        self.MaxValue=10
+        
+     
         wx.Panel.__init__ ( self, *args, **kwargs )
         self.SetDoubleBuffered(True)
         
@@ -45,14 +47,24 @@ class Graph ( wx.Panel):
         
         HEIGHT=self.getGraphHeight() - self.XMarkings
         WIDTH=self.getGraphWidth()
-        HR=float(HEIGHT)/1024
-        INTERVAL=100
+        if (self.MaxValue > 100):
+            INTERVAL=100
+            PADDING=25
+        elif (self.MaxValue <= 100 and self.MaxValue >= 20):
+            INTERVAL=10
+            PADDING=5
+        else:
+            INTERVAL=2
+            PADDING=2
+        GRAPH_SIZE=self.MaxValue + PADDING
+        HR=float(HEIGHT)/GRAPH_SIZE
         data = self.data
         
         # Draw Grid Lines
         dc.SetPen(wx.Pen(wx.BLUE, 1)) 
         i=0
-        while (i < (1024/INTERVAL) + 1):
+        while (i < (GRAPH_SIZE/INTERVAL) + 1):
+            
             dc.DrawText(str(i * INTERVAL), 0, HEIGHT - i * INTERVAL * HR - 7)
             dc.DrawLine(self.YMarkings + 0, HEIGHT - i * INTERVAL * HR, WIDTH, HEIGHT - i * INTERVAL * HR)
             i+=1;
@@ -71,6 +83,9 @@ class Graph ( wx.Panel):
             
     def setData(self, data):
         self.data = data
+#        self.MaxValue = int(max(data))
+#        print int(max(data))
+#        print self.MaxValue
         
     def updateGraph(self, *args):
         self.Refresh()
@@ -90,6 +105,8 @@ class Main ( wx.Frame ):
         self.ser = NULL
         
         wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = u"Arduino Serial Monitor", pos = wx.DefaultPosition, size = wx.Size( 750,550 ), style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
+        
+#        self.SetBackgroundColour( wx.Colour( 5, 88, 100 ) )
         
         self.SetSizeHintsSz( wx.DefaultSize, wx.DefaultSize )
         
