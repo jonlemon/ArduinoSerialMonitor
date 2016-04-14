@@ -25,7 +25,11 @@ class Graph ( wx.Panel):
         self.data = list()
         self.XMarkings=25
         self.YMarkings=25
-        self.MaxValue=10
+        self.MaxValue=1024
+        self.MinValue=0
+        self.font = wx.Font(pointSize = 10, family = wx.DEFAULT,
+               style = wx.NORMAL, weight = wx.NORMAL,
+               faceName = 'Consolas')
         
      
         wx.Panel.__init__ ( self, *args, **kwargs )
@@ -40,22 +44,26 @@ class Graph ( wx.Panel):
         self.draw(self.dc)    
 
     def draw(self, dc):
-        font = wx.Font(pointSize = 10, family = wx.DEFAULT,
-               style = wx.NORMAL, weight = wx.NORMAL,
-               faceName = 'Consolas')
-        dc.SetFont(font)
-        
+        dc.SetFont(self.font)
         HEIGHT=self.getGraphHeight() - self.XMarkings
         WIDTH=self.getGraphWidth()
-        if (self.MaxValue > 100):
+        
+        if (self.MaxValue > 500):
             INTERVAL=100
             PADDING=25
+        elif (self.MaxValue <= 500 and self.MaxValue > 200):
+            INTERVAL=50
+            PADDING=16
+        elif (self.MaxValue <= 200 and self.MaxValue > 100):
+            INTERVAL=20
+            PADDING=11
         elif (self.MaxValue <= 100 and self.MaxValue >= 20):
             INTERVAL=10
             PADDING=5
         else:
             INTERVAL=2
-            PADDING=2
+            PADDING=3
+            
         GRAPH_SIZE=self.MaxValue + PADDING
         HR=float(HEIGHT)/GRAPH_SIZE
         data = self.data
@@ -87,6 +95,13 @@ class Graph ( wx.Panel):
 #        print int(max(data))
 #        print self.MaxValue
         
+    def setMax(self, max):
+        self.MaxValue = max
+        self.updateGraph()
+        
+    def setMin(self, min):
+        self.MinValue = min    
+    
     def updateGraph(self, *args):
         self.Refresh()
 
@@ -104,7 +119,7 @@ class Main ( wx.Frame ):
         self.data = list()
         self.ser = NULL
         
-        wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = u"Arduino Serial Monitor", pos = wx.DefaultPosition, size = wx.Size( 750,550 ), style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
+        wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, pos = wx.DefaultPosition, size = wx.Size( 750,550 ), style = wx.MAXIMIZE_BOX|wx.RESIZE_BORDER|wx.NO_BORDER|wx.TAB_TRAVERSAL )
         
 #        self.SetBackgroundColour( wx.Colour( 5, 88, 100 ) )
         
@@ -112,27 +127,60 @@ class Main ( wx.Frame ):
         
         bSizer4 = wx.BoxSizer( wx.VERTICAL )
         
+        bSizer8 = wx.BoxSizer( wx.HORIZONTAL )
+        
+        self.titleText = wx.StaticText( self, wx.ID_ANY, u"Arduino Serial Monitor", wx.DefaultPosition, wx.DefaultSize, 0 )
+        self.titleText.Wrap( -1 )
+        self.titleText.SetFont( wx.Font( 18, 70, 90, 92, False, "Nevis" ) )
+        
+        bSizer8.Add( self.titleText, 1, wx.ALL, 5 )
+        
+        self.close_button = wx.Button( self, wx.ID_ANY, u"Exit", wx.DefaultPosition, wx.DefaultSize, wx.BU_EXACTFIT )
+        bSizer8.Add( self.close_button, 0, wx.ALL, 5 )
+        
+        
+        bSizer4.Add( bSizer8, 0, wx.EXPAND, 5 )
+        
+        self.m_staticline1 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_HORIZONTAL )
+        bSizer4.Add( self.m_staticline1, 0, wx.EXPAND|wx.RIGHT|wx.LEFT, 5 )
+        
         bSizer7 = wx.BoxSizer( wx.HORIZONTAL )
         
         self.textInput = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, wx.TE_MULTILINE|wx.TE_READONLY )
         self.textInput.SetBackgroundColour( wx.SystemSettings.GetColour( wx.SYS_COLOUR_WINDOW ) )
         self.textInput.SetMaxSize( wx.Size( 200,-1 ) )
         
-        bSizer7.Add( self.textInput, 1, wx.EXPAND, 5 )
+        bSizer7.Add( self.textInput, 1, wx.EXPAND |wx.ALL, 5 )
         
-        bSizer8 = wx.BoxSizer( wx.VERTICAL )
+        bSizer8 = wx.BoxSizer( wx.HORIZONTAL )
+        
+        SliderSizer = wx.BoxSizer( wx.VERTICAL )
+        
+        self.max_slider = wx.Slider( self, wx.ID_ANY, 1024, 0, 1024, wx.DefaultPosition, wx.DefaultSize, wx.SL_INVERSE|wx.SL_VERTICAL )
+        self.max_slider.SetForegroundColour( wx.Colour( 255, 128, 0 ) )
+        
+        SliderSizer.Add( self.max_slider, 1, wx.ALL|wx.EXPAND, 5 )
+        
+        self.min_slider = wx.Slider( self, wx.ID_ANY, 0, 0, 1024, wx.DefaultPosition, wx.DefaultSize, wx.SL_INVERSE|wx.SL_VERTICAL )
+        SliderSizer.Add( self.min_slider, 1, wx.ALL, 5 )
+        
+        
+        bSizer8.Add( SliderSizer, 0, wx.EXPAND, 5 )
         
         self.graph = Graph( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL )
         self.graph.SetBackgroundColour( wx.Colour( 255, 255, 255 ) )
         self.graph.SetMinSize( wx.Size( -1,512 ) )
         
-        bSizer8.Add( self.graph, 4, wx.EXPAND |wx.ALL, 0 )
+        bSizer8.Add( self.graph, 4, wx.EXPAND |wx.ALL, 5 )
         
         
         bSizer7.Add( bSizer8, 3, wx.EXPAND, 5 )
         
         
         bSizer4.Add( bSizer7, 1, wx.EXPAND, 5 )
+        
+        self.m_staticline2 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_HORIZONTAL )
+        bSizer4.Add( self.m_staticline2, 0, wx.EXPAND|wx.RIGHT|wx.LEFT, 5 )
         
         bSizer6 = wx.BoxSizer( wx.HORIZONTAL )
         
@@ -180,7 +228,21 @@ class Main ( wx.Frame ):
 #        self.save_button.Bind( wx.EVT_BUTTON, self.getStats )
         self.connect.Bind( wx.EVT_BUTTON, self.initializeSerialConnection )
         self.connections.Bind( wx.EVT_CHOICE, self.initializeSerialConnection )
+        self.max_slider.Bind( wx.EVT_SCROLL_THUMBTRACK, self.UpdateMax )
+        self.min_slider.Bind( wx.EVT_SCROLL_CHANGED, self.UpdateMin )
+        
+        
+        self.titleText.Bind( wx.EVT_MOTION, self.moveFrame )
+        self.titleText.Bind( wx.EVT_LEFT_DOWN, self.OnFrame1LeftDown )
+        self.close_button.Bind( wx.EVT_BUTTON, self.onClose )
+        
+#        self.Bind(wx.EVT_MOTION, self.OnFrame1Motion)
+#        self.Bind(wx.EVT_LEFT_DOWN, self.OnFrame1LeftDown)
+        
         self.Bind(wx.EVT_CLOSE, self.onClose)
+        self.Bind(wx.EVT_LEFT_UP, self.onUnclick)
+    
+        self.lastMousePos = wx.Point(0, 0)
     
     def __del__( self ):
         pass
@@ -214,6 +276,13 @@ class Main ( wx.Frame ):
         self.graph.setData(self.data)
         self.graph.Refresh()
         self.textInput.Clear()
+        
+    def UpdateMax( self, event ):
+        print(self.max_slider.GetValue())
+        self.graph.setMax(self.max_slider.GetValue())
+        
+    def UpdateMin( self, event ):
+        event.Skip()
         
     def LongRunning(self):
         
@@ -296,6 +365,32 @@ class Main ( wx.Frame ):
         self.running = False
         self.graph.Destroy()
         self.Destroy()
+        
+    def moveFrame( self, event ):
+        if event.LeftIsDown():
+            windowX = self.lastMousePos[0]
+            windowY = self.lastMousePos[1]
+            screenX = wx.GetMousePosition()[0]
+            screenY = wx.GetMousePosition()[1]
+            deltaX  = screenX - windowX
+            deltaY  = screenY - windowY
+            print(str(deltaX) + ", " + str(deltaY))
+#            self.Move(wx.Point(screenX - windowX, screenY - windowY))
+            self.Move(wx.Point(self.GetPosition()[0] + deltaX, self.GetPosition()[1] + deltaY))
+            self.lastMousePos = wx.GetMousePosition()
+        event.Skip()
+ 
+    def OnFrame1LeftDown(self, event):
+#        self.lastMousePos = event.GetPosition()
+        self.lastMousePos = wx.GetMousePosition()
+#        print(self.lastMousePos)
+#        print(wx.GetMousePosition())
+#        self.lastMousePos = wx.GetMousePosition()
+        event.Skip()
+ 
+    def onUnclick(self, event):
+        print("All clear")
+
 
 app = wx.App(False)
 
