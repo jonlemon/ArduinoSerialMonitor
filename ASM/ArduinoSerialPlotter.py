@@ -14,6 +14,7 @@ import serial.tools.list_ports
 import threading
 import time
 from boto.dynamodb.condition import NULL
+from wx.lib.buttons import GenButton
 
 ###########################################################################
 ## Class Main
@@ -129,14 +130,19 @@ class Main ( wx.Frame ):
         
         bSizer8 = wx.BoxSizer( wx.HORIZONTAL )
         
+        bSizer8.AddSpacer( ( 0, 0), 0, wx.EXPAND|wx.LEFT, 5 )
+        
+        self.m_bitmap2 = wx.StaticBitmap( self, wx.ID_ANY, wx.Bitmap( u"img/iconmonstr-chart-16-32.png", wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, 0 )
+        bSizer8.Add( self.m_bitmap2, 0, wx.TOP|wx.RIGHT, 3 )
+        
         self.titleText = wx.StaticText( self, wx.ID_ANY, u"Arduino Serial Monitor", wx.DefaultPosition, wx.DefaultSize, 0 )
         self.titleText.Wrap( -1 )
         self.titleText.SetFont( wx.Font( 18, 70, 90, 92, False, "Nevis" ) )
         
         bSizer8.Add( self.titleText, 1, wx.ALL, 5 )
         
-        self.close_button = wx.Button( self, wx.ID_ANY, u"Exit", wx.DefaultPosition, wx.DefaultSize, wx.BU_EXACTFIT )
-        bSizer8.Add( self.close_button, 0, wx.ALL, 5 )
+        self.close_button = wx.BitmapButton( self, wx.ID_ANY, wx.Bitmap( u"img/iconmonstr-x-mark-1-24.png", wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
+        bSizer8.Add( self.close_button, 0, wx.ALL|wx.EXPAND, 3 )
         
         
         bSizer4.Add( bSizer8, 0, wx.EXPAND, 5 )
@@ -183,6 +189,10 @@ class Main ( wx.Frame ):
         bSizer4.Add( self.m_staticline2, 0, wx.EXPAND|wx.RIGHT|wx.LEFT, 5 )
         
         bSizer6 = wx.BoxSizer( wx.HORIZONTAL )
+        
+        self.test_button = GenButton(self, wx.ID_ANY, "Test", wx.DefaultPosition, wx.DefaultSize,style=wx.BORDER_SIMPLE)
+        #wx.Button( self, wx.ID_ANY, u"Save Data", wx.DefaultPosition, wx.DefaultSize, 0 )
+        bSizer6.Add( self.test_button, 0, wx.ALL, 5 )
         
         self.save_button = wx.Button( self, wx.ID_ANY, u"Save Data", wx.DefaultPosition, wx.DefaultSize, 0 )
         bSizer6.Add( self.save_button, 0, wx.ALL, 5 )
