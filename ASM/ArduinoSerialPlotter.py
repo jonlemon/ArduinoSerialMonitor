@@ -116,6 +116,7 @@ class Main ( wx.Frame ):
     
     def __init__( self, parent ):
         
+        self.drag = False
         self.running = False
         self.data = list()
         self.ser = NULL
@@ -140,6 +141,9 @@ class Main ( wx.Frame ):
         self.titleText.SetFont( wx.Font( 18, 70, 90, 92, False, "Nevis" ) )
         
         bSizer8.Add( self.titleText, 1, wx.ALL, 5 )
+        
+        self.resize_button = wx.BitmapButton( self, wx.ID_ANY, wx.Bitmap( u"img/iconmonstr-resize-8-24.png", wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
+        bSizer8.Add( self.resize_button, 0, wx.ALL, 3 )
         
         self.close_button = wx.BitmapButton( self, wx.ID_ANY, wx.Bitmap( u"img/iconmonstr-x-mark-1-24.png", wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
         bSizer8.Add( self.close_button, 0, wx.ALL|wx.EXPAND, 3 )
@@ -244,10 +248,12 @@ class Main ( wx.Frame ):
         
         self.titleText.Bind( wx.EVT_MOTION, self.moveFrame )
         self.titleText.Bind( wx.EVT_LEFT_DOWN, self.OnFrame1LeftDown )
+        
+        self.resize_button.Bind( wx.EVT_BUTTON, self.onResize )
         self.close_button.Bind( wx.EVT_BUTTON, self.onClose )
         
-#        self.Bind(wx.EVT_MOTION, self.OnFrame1Motion)
-#        self.Bind(wx.EVT_LEFT_DOWN, self.OnFrame1LeftDown)
+#        self.Bind( wx.EVT_MOTION, self.test )
+        self.test_button.Bind( wx.EVT_BUTTON, self.test)
         
         self.Bind(wx.EVT_CLOSE, self.onClose)
         self.Bind(wx.EVT_LEFT_UP, self.onUnclick)
@@ -256,6 +262,11 @@ class Main ( wx.Frame ):
     
     def __del__( self ):
         pass
+    
+    def test(self, event):
+        while True:
+            print(wx.GetMousePosition())
+            time.sleep(.001)
 
     def getStats(self, event):
         print(self.graph.GetSize())
@@ -371,6 +382,10 @@ class Main ( wx.Frame ):
                 print path
         dlg.Destroy()
     
+    def onResize(self, event):
+#        self.Maximize(True)
+        self.ShowFullScreen(not self.IsFullScreen())
+    
     def onClose(self, event):
         self.running = False
         self.graph.Destroy()
@@ -384,15 +399,24 @@ class Main ( wx.Frame ):
             screenY = wx.GetMousePosition()[1]
             deltaX  = screenX - windowX
             deltaY  = screenY - windowY
-            print(str(deltaX) + ", " + str(deltaY))
+#            print(str(deltaX) + ", " + str(deltaY))
 #            self.Move(wx.Point(screenX - windowX, screenY - windowY))
             self.Move(wx.Point(self.GetPosition()[0] + deltaX, self.GetPosition()[1] + deltaY))
             self.lastMousePos = wx.GetMousePosition()
+            print("it's moving")
+        else:
+            print("False")
         event.Skip()
  
     def OnFrame1LeftDown(self, event):
 #        self.lastMousePos = event.GetPosition()
         self.lastMousePos = wx.GetMousePosition()
+        if event.LeftIsDown():
+            self.drag = True
+            print("true")
+        else:
+            self.drag = False
+            print("false")
 #        print(self.lastMousePos)
 #        print(wx.GetMousePosition())
 #        self.lastMousePos = wx.GetMousePosition()
