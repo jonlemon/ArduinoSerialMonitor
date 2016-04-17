@@ -129,6 +129,9 @@ class Main ( wx.Frame ):
         
         bSizer4 = wx.BoxSizer( wx.VERTICAL )
         
+        self.m_staticline6 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_HORIZONTAL )
+        bSizer4.Add( self.m_staticline6, 0, wx.EXPAND|wx.TOP|wx.RIGHT|wx.LEFT, 5 )
+        
         bSizer8 = wx.BoxSizer( wx.HORIZONTAL )
         
         bSizer8.AddSpacer( ( 0, 0), 0, wx.EXPAND|wx.LEFT, 5 )
@@ -383,8 +386,7 @@ class Main ( wx.Frame ):
         dlg.Destroy()
     
     def onResize(self, event):
-#        self.Maximize(True)
-        self.ShowFullScreen(not self.IsFullScreen())
+        self.Maximize(not self.IsMaximized())
     
     def onClose(self, event):
         self.running = False
