@@ -49,6 +49,7 @@ class Graph ( wx.Panel):
         HEIGHT=self.getGraphHeight() - self.XMarkings
         WIDTH=self.getGraphWidth()
         
+        
         if (self.MaxValue > 500):
             INTERVAL=100
             PADDING=25
@@ -84,8 +85,13 @@ class Graph ( wx.Panel):
         else:
             lastValue=data[1]
         j=0
-        dc.SetPen(wx.Pen(wx.BLACK, 2))           
-        for value in data[1:data.__sizeof__()]:
+        dc.SetPen(wx.Pen(wx.BLACK, 2))
+        
+        DATASTART = len(data) - self.getGraphWidth() + self.YMarkings
+        if DATASTART < 1:
+            DATASTART=1
+                   
+        for value in data[DATASTART:data.__sizeof__()]:
             dc.DrawLine(self.YMarkings + j, HEIGHT - int(lastValue) * HR, self.YMarkings + j+1, HEIGHT - (int(value) * HR))
             lastValue=value
             j+=1;
