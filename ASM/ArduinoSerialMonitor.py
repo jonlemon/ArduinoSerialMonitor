@@ -15,6 +15,8 @@ import threading
 import time
 from boto.dynamodb.condition import NULL
 from wx.lib.buttons import GenButton
+from PyInstaller.utils.hooks import collect_submodules
+hiddenimports = collect_submodules('pkg_resources._vendor')
 
 ###########################################################################
 ## Class Main
@@ -28,6 +30,8 @@ class Graph ( wx.Panel):
         self.YMarkings=25
         self.MaxValue=1024
         self.MinValue=0
+        self.YHeight = self.MaxValue - self.MinValue
+        self.MinY = 10
         self.font = wx.Font(pointSize = 10, family = wx.DEFAULT,
                style = wx.NORMAL, weight = wx.NORMAL,
                faceName = 'Consolas')
@@ -49,24 +53,25 @@ class Graph ( wx.Panel):
         HEIGHT=self.getGraphHeight() - self.XMarkings
         WIDTH=self.getGraphWidth()
         
+        self.YHeight = self.MaxValue - self.MinValue
         
-        if (self.MaxValue > 500):
+        if (self.YHeight > 500):
             INTERVAL=100
             PADDING=25
-        elif (self.MaxValue <= 500 and self.MaxValue > 200):
+        elif (self.YHeight <= 500 and self.YHeight > 200):
             INTERVAL=50
             PADDING=16
-        elif (self.MaxValue <= 200 and self.MaxValue > 100):
+        elif (self.YHeight <= 200 and self.YHeight > 100):
             INTERVAL=20
             PADDING=11
-        elif (self.MaxValue <= 100 and self.MaxValue >= 20):
+        elif (self.YHeight <= 100 and self.YHeight >= 20):
             INTERVAL=10
             PADDING=5
         else:
             INTERVAL=2
             PADDING=3
             
-        GRAPH_SIZE=self.MaxValue + PADDING
+        GRAPH_SIZE=self.YHeight + PADDING
         HR=float(HEIGHT)/GRAPH_SIZE
         data = self.data
         
@@ -75,7 +80,7 @@ class Graph ( wx.Panel):
         i=0
         while (i < (GRAPH_SIZE/INTERVAL) + 1):
             
-            dc.DrawText(str(i * INTERVAL), 0, HEIGHT - i * INTERVAL * HR - 7)
+            dc.DrawText(str(i * INTERVAL + self.MinValue), 0, HEIGHT - (i * INTERVAL) * HR - 7 )
             dc.DrawLine(self.YMarkings + 0, HEIGHT - i * INTERVAL * HR, WIDTH, HEIGHT - i * INTERVAL * HR)
             i+=1;
         
@@ -92,22 +97,24 @@ class Graph ( wx.Panel):
             DATASTART=1
                    
         for value in data[DATASTART:data.__sizeof__()]:
-            dc.DrawLine(self.YMarkings + j, HEIGHT - int(lastValue) * HR, self.YMarkings + j+1, HEIGHT - (int(value) * HR))
+            dc.DrawLine(self.YMarkings + j, HEIGHT - (int(lastValue) - self.MinValue) * HR, self.YMarkings + j+1, HEIGHT - ((int(value) - self.MinValue) * HR))
             lastValue=value
             j+=1;
             
     def setData(self, data):
         self.data = data
-#        self.MaxValue = int(max(data))
-#        print int(max(data))
-#        print self.MaxValue
         
     def setMax(self, max):
         self.MaxValue = max
-        self.updateGraph()
+        self.setYHeight()
         
     def setMin(self, min):
-        self.MinValue = min    
+        self.MinValue = min   
+        self.setYHeight() 
+        
+    def setYHeight(self):
+        self.YHeight = self.MaxValue - self.MinValue
+        self.updateGraph()
     
     def updateGraph(self, *args):
         self.Refresh()
@@ -202,10 +209,7 @@ class Main ( wx.Frame ):
         bSizer4.Add( self.m_staticline2, 0, wx.EXPAND|wx.RIGHT|wx.LEFT, 5 )
         
         bSizer6 = wx.BoxSizer( wx.HORIZONTAL )
-        
-        self.test_button = GenButton(self, wx.ID_ANY, "Test", wx.DefaultPosition, wx.DefaultSize,style=wx.BORDER_SIMPLE)
-        #wx.Button( self, wx.ID_ANY, u"Save Data", wx.DefaultPosition, wx.DefaultSize, 0 )
-        bSizer6.Add( self.test_button, 0, wx.ALL, 5 )
+    
         
         self.save_button = wx.Button( self, wx.ID_ANY, u"Save Data", wx.DefaultPosition, wx.DefaultSize, 0 )
         bSizer6.Add( self.save_button, 0, wx.ALL, 5 )
@@ -251,8 +255,8 @@ class Main ( wx.Frame ):
 #        self.save_button.Bind( wx.EVT_BUTTON, self.getStats )
         self.connect.Bind( wx.EVT_BUTTON, self.initializeSerialConnection )
         self.connections.Bind( wx.EVT_CHOICE, self.initializeSerialConnection )
-        self.max_slider.Bind( wx.EVT_SCROLL_THUMBTRACK, self.UpdateMax )
-        self.min_slider.Bind( wx.EVT_SCROLL_CHANGED, self.UpdateMin )
+        self.max_slider.Bind( wx.EVT_SCROLL, self.UpdateMax )
+        self.min_slider.Bind( wx.EVT_SCROLL, self.UpdateMin )
         
         
         self.titleText.Bind( wx.EVT_MOTION, self.moveFrame )
@@ -261,9 +265,6 @@ class Main ( wx.Frame ):
         self.resize_button.Bind( wx.EVT_BUTTON, self.onResize )
         self.close_button.Bind( wx.EVT_BUTTON, self.onClose )
         
-#        self.Bind( wx.EVT_MOTION, self.test )
-        self.test_button.Bind( wx.EVT_BUTTON, self.test)
-        
         self.Bind(wx.EVT_CLOSE, self.onClose)
         self.Bind(wx.EVT_LEFT_UP, self.onUnclick)
     
@@ -271,11 +272,6 @@ class Main ( wx.Frame ):
     
     def __del__( self ):
         pass
-    
-    def test(self, event):
-        while True:
-            print(wx.GetMousePosition())
-            time.sleep(.001)
 
     def getStats(self, event):
         print(self.graph.GetSize())
@@ -308,10 +304,11 @@ class Main ( wx.Frame ):
         self.textInput.Clear()
         
     def UpdateMax( self, event ):
-        print(self.max_slider.GetValue())
+#        print(self.max_slider.GetValue())
         self.graph.setMax(self.max_slider.GetValue())
         
     def UpdateMin( self, event ):
+        self.graph.setMin(self.min_slider.GetValue())
         event.Skip()
         
     def LongRunning(self):
